@@ -9,13 +9,14 @@ $\="\n";
 
 $SIG{__WARN__} = sub {die @_};
 
-my $usage="$0 [-i] [-v] [-w] [-s SEPARATOR] COL_NUM filter_file < input_file\n
+my $usage="$0 [-i] [-v] [-w] [-s SEPARATOR] [-f HEADER_FIRST_CHAR] [--header N] COL_NUM filter_file < input_file\n
 	filter_file must be a single column file
-	-i ignore case
-	-v invert the filter: in output are printed lines that do not have in COL_NUM an element present in filter_file
-	-w COL_NUM may have more than one field separed by ';', input rows are reported if at least one word is present in filter_file
-	-s set the separator
-	-f each row starting by '>' is always passed to the standard output
+	-i 		ignore case
+	-v 		invert the filter: in output are printed lines that do not have in COL_NUM an element present in filter_file
+	-w 		COL_NUM may have more than one field separed by ';', input rows are reported if at least one word is present in filter_file
+	-s 		set the separator
+	-f CHAR		each row starting by CHAR is always passed to the standard output, e.g. -f '>' to pass fasta header
+	--header N	pass the first N rows 
 ";
 
 my $help=0;
@@ -23,14 +24,16 @@ my $invert=0;
 my $ignore_case=0;
 my $multiple_word=0;
 my $separator = ';';
-my $pass_fasta_headers=0;
+my $pass_headers=0;
+my $header=0;
 GetOptions (
 	'h|help' => \$help,
 	'invert|v' => \$invert,
 	'ignore-case|i' => \$ignore_case,
 	'multiple_word|w' => \$multiple_word,
 	'separator|s=s' => \$separator,
-	'fasta|f' => \$pass_fasta_headers,
+	'fasta|f=s' => \$pass_headers,
+	'header=i' => \$header,
 ) or die($usage);
 
 if($help){
@@ -60,9 +63,12 @@ while(<FH>){
 
 while(<>){
 	chomp;
-	if($pass_fasta_headers and m/^>/){
+	if($pass_headers and m/^$pass_headers/){
 		print;
 		next;
+	}
+	if($.<=$header){
+		print; next;
 	}
 	my @F=split /\t/;
 	die("Insufficent column number in STDIN") if !defined($F[$col_1]);
